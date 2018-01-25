@@ -73,52 +73,53 @@
                             nextGrid[i][j] = 1;
                             continue;
                         }
+                    }
 
-                        // if the cell is dead but has exactly 3 neighbors
-                        if (currentGrid[i][j] == 0 && neighborsAlive == 3) {
-                            // the cell will be reproduced
-                            nextGrid[i][j] = 1;
-                            continue;
-                        }
-                        // cell stays dead
-                        else {
-                            nextGrid[i][j] = 0;
-                        }
+                    // if the cell is dead but has exactly 3 neighbors
+                    if (currentGrid[i][j] == 0 && neighborsAlive == 3) {
+                        // the cell will be reproduced
+                        nextGrid[i][j] = 1;
+                        continue;
+                    }
+                    // cell stays dead
+                    else {
+                        nextGrid[i][j] = 0;
                     }
                 }
+            }
 
-                // assign values in nextGrid to currentGrid
-                let swap = currentGrid;
-                currentGrid = nextGrid;
-                nextGrid = swap;
-            },
+            // assign values in nextGrid to currentGrid
+            let swap = currentGrid;
+            currentGrid = nextGrid;
+            nextGrid = swap;
+        },
 
-            draw() {
-                requestAnimationFrame(this.draw)
-                this.animate()
+        draw() {
+            requestAnimationFrame(this.draw)
+            this.animate()
 
-                // draw to your canvas here
-                this.ctx.fillStyle = 'black'
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+            // draw to your canvas here
+            this.ctx.fillStyle = 'black'
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
-                let cellWidth = this.canvas.width / gridSize;
-                let cellHeight = this.canvas.height / gridSize;
+            let cellWidth = this.canvas.width / gridSize;
+            let cellHeight = this.canvas.height / gridSize;
 
-                for (let i = 0; i < gridSize; i++) {
-                    let row = currentGrid[i];
-                    let yPos = i * cellHeight;
+            for (let i = 0; i < gridSize; i++) {
+                let row = currentGrid[i];
+                let yPos = i * cellHeight;
 
-                    for (let j = 0; j < gridSize; j++) {
-                        let cell = row[j];
-                        let xPos = j * cellWidth
+                for (let j = 0; j < gridSize; j++) {
+                    let cell = row[j];
+                    let xPos = j * cellWidth
 
-                        if (cell === 1) {
-                            this.ctx.fillStyle = 'white'
-                            this.ctx.fillRect(xPos, yPos, cellWidth, cellHeight)
-                        }
+                    if (cell === 1) {
+                        this.ctx.fillStyle = 'white'
+                        this.ctx.fillRect(xPos, yPos, cellWidth, cellHeight)
                     }
                 }
             }
         }
-        window.onload = app.init.bind(app)
-    }()
+    }
+    window.onload = app.init.bind(app)
+}()
