@@ -1,4 +1,4 @@
-!function () {
+! function () {
     'use strict';
 
     let currentGrid = [];
@@ -45,16 +45,16 @@
                         nextGrid[i][j] = currentGrid[i][j];
                         continue;
                     }
-                    
+
                     let neighborsAlive = 0;
-                    
+
                     // count the number of live neighbors around the current cell
-                    for(let x = -1; x < 2; x++){
-                        for(let y = -1; y < 2; y++){
+                    for (let x = -1; x < 2; x++) {
+                        for (let y = -1; y < 2; y++) {
                             neighborsAlive += currentGrid[x + i][y + j];
                         }
                     }
-                    
+
                     // subtract the value of the current cell 
                     neighborsAlive -= currentGrid[i][j];
 
@@ -66,60 +66,59 @@
                             // cell dies 
                             nextGrid[i][j] = 0;
                             continue;
-                        } 
-                        
+                        }
+
                         // cell lives on to next gen
-                        else
+                        else {
                             nextGrid[i][j] = 1;
                             continue;
                         }
 
-                    // if the cell is dead but has exactly 3 neighbors
-                    if (currentGrid[i][j] == 0 && neighborsAlive == 3) {
-                        // the cell will be reproduced
-                        nextGrid[i][j] = 1;
-                        continue;
-                    }
-                    // cell stays dead
-                    else{
-                        nextGrid[i][j] = 0;
+                        // if the cell is dead but has exactly 3 neighbors
+                        if (currentGrid[i][j] == 0 && neighborsAlive == 3) {
+                            // the cell will be reproduced
+                            nextGrid[i][j] = 1;
+                            continue;
+                        }
+                        // cell stays dead
+                        else {
+                            nextGrid[i][j] = 0;
+                        }
                     }
                 }
-            }
 
-            // assign values in nextGrid to currentGrid
-            let swap = currentGrid;
-            currentGrid = nextGrid;
-            nextGrid = swap;
-        },
+                // assign values in nextGrid to currentGrid
+                let swap = currentGrid;
+                currentGrid = nextGrid;
+                nextGrid = swap;
+            },
 
-        draw() {
-            requestAnimationFrame(this.draw)
-            this.animate()
+            draw() {
+                requestAnimationFrame(this.draw)
+                this.animate()
 
-            // draw to your canvas here
-            this.ctx.fillStyle = 'black'
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+                // draw to your canvas here
+                this.ctx.fillStyle = 'black'
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
-            let cellWidth = this.canvas.width / gridSize;
-            let cellHeight = this.canvas.height / gridSize;
-            console.log(currentGrid);
+                let cellWidth = this.canvas.width / gridSize;
+                let cellHeight = this.canvas.height / gridSize;
 
-            for (let i = 0; i < gridSize; i++) {
-                let row = currentGrid[i];
-                let yPos = i * cellHeight;
+                for (let i = 0; i < gridSize; i++) {
+                    let row = currentGrid[i];
+                    let yPos = i * cellHeight;
 
-                for (let j = 0; j < gridSize; j++) {
-                    let cell = row[j];
-                    let xPos = j * cellWidth
+                    for (let j = 0; j < gridSize; j++) {
+                        let cell = row[j];
+                        let xPos = j * cellWidth
 
-                    if (cell === 1) {
-                        this.ctx.fillStyle = 'white'
-                        this.ctx.fillRect(xPos, yPos, cellWidth, cellHeight)
+                        if (cell === 1) {
+                            this.ctx.fillStyle = 'white'
+                            this.ctx.fillRect(xPos, yPos, cellWidth, cellHeight)
+                        }
                     }
                 }
             }
         }
-    }
-    window.onload = app.init.bind(app)
-}()
+        window.onload = app.init.bind(app)
+    }()
