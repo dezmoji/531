@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <title>L-Systems Variation</title>
+    <script src="victor.min.js"></script>
+    <script src="turtle.js"></script>
+    <script src='L-Systems_Variation.js'></script>
+    <style>
+        canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        body{
+            margin: 0;
+        }
+        
+        div{
+            position: absolute;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="1000px" height="750px"></canvas>
+    <div>
+        <h3>Background Color</h3>
+        <button  type="button" value="white" onclick="changeColor(this)">White</button>
+        <button type="button" value="black" onclick="changeColor(this)">Black</button>
+        <button type="button" value="#9B1D20" onclick="changeColor(this)">Red</button>
+        <button type="button" value="#5FBFF9" onclick="changeColor(this)">Light Blue</button>
+    </div>
+    <script>
+        function changeColor(tag) {
+            document.body.style.background = tag.value;
+        }
+    </script>
+</body>
+</html>
