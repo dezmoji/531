@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang='en'>
+
+<head>
+    <title>Reaction Diffusion</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0
+        }
+        /*
+        canvas {
+            width: 100%;
+            height: 100%
+        }*/
+    </style>
+
+</head>
+
+<body>
+    <canvas></canvas>
+</body>
+
+<script>
+    // Karl Sims RD tutorial: http://www.karlsims.com/rd.html
+    // Video tutorial using p5.js (don't use p5.js!)
+    // https://www.youtube.com/watch?v=BV9ny785UNc
+
+    // calculating large grids can get expensive very quickly
+    // experiment with different values to see how high you can go
+    const width = 300,
+        height = 300,
+        dA = .59,
+        dB = 0.25,
+        feed = .0367,
+        k = .0649;
+
+    let canvas, ctx, grid, temp
+
+    // setup after canvas is instantiated
+    window.onload = function() {
+        canvas = document.querySelector('canvas')
+        ctx = canvas.getContext('2d')
+        canvas.width = width
+        canvas.height = height
+
+        // set up the grid and temp arrays
+        grid = [];
+        temp = [];
+        for (let x = 0; x < width; x++) {
+            grid[x] = [];
+            temp[x] = [];
+            // set up the a and b values
+            for (let y = 0; y < height; y++) {
+                grid[x][y] = {
+                    a: 1,
+                    b: 0
+                };
+                temp[x][y] = {
+                    a: 1,
+                    b: 0
+                };
+            }
+        }
+
+        /*
+                for (let i = 0; i < 5; i++) {
+                    let x = Math.floor(Math.random() * width);
+                    let y = Math.floor(Math.random() * height);
+                    grid[x][y].b = 1;
+                }
+        */
+
+        // seed the b values
+        for (var i = (width / 2) - 5; i < (width / 2) + 5; i++) {
+            for (var j = (height / 2) - 5; j < (height / 2) + 5; j++) {
+                grid[i][j].b = 1;
+            }
+        }
+
+        requestAnimationFrame(draw)
+    }
+
+    const draw = function() {
+        requestAnimationFrame(draw)
+
+        ctx.fillStyle = 'black'
+        ctx.fillRect(0, 0, width, height)
+
+        // get a reference to all the pixels stored in our canvas
+        // so that we can write them to the screen all at once instead
+        // of using hundreds of calls to fillRect(), which would be
+        // expensive!
+        let imgd = ctx.getImageData(0, 0, width, height),
+            pixels = imgd.data
+
+        // run simulation here...
+        for (let x = 1; x < width - 1; x++) {
+            for (let y = 1; y < height - 1; y++) {
+                let a = grid[x][y].a;
+                let b = grid[x][y].b;
+
+                temp[x][y].a = a + (dA * laplaceA(x, y)) - (a * b * b) + (feed * (1 - a));
+                temp[x][y].b = b + (dB * laplaceB(x, y)) + (a * b * b) - ((k + feed) * b);
+
+                temp[x][y].a = clamp(temp[x][y].a, 0, 1);
+                temp[x][y].b = clamp(temp[x][y].b, 0, 1);
+            }
+        }
+
+
+        // ... and then draw
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
+                let pixelIndex = (y * width * 4) + (x * 4)
+
+                // create a value based on some combination of a and b
+                // for this particular cell... NOTE THAT THIS WILL THROW
+                // AN ERROR UNTIL YOU FILL IN THE VALUE
+                let amount = Math.floor((temp[x][y].a - temp[x][y].b) * 255);
+                amount = clamp(amount, 0, 255);
+
+                pixels[pixelIndex] = amount
+                pixels[pixelIndex + 1] = amount
+                pixels[pixelIndex + 2] = amount
+                pixels[pixelIndex + 3] = 255
+            }
+        }
+
+        ctx.putImageData(imgd, 0, 0)
+
+        let swap = grid
+        grid = temp
+        temp = swap
+    }
+
+    // laplace function for a
+    const laplaceA = function(x, y) {
+        var sum = 0;
+        sum += grid[x][y].a * -1;
+        sum += grid[x + 1][y].a * .2;
+        sum += grid[x - 1][y].a * .2;
+        sum += grid[x][y + 1].a * .2;
+        sum += grid[x][y - 1].a * .2;
+        sum += grid[x + 1][y + 1].a * .05;
+        sum += grid[x + 1][y - 1].a * .05;
+        sum += grid[x - 1][y + 1].a * .05;
+        sum += grid[x - 1][y - 1].a * .05;
+        return sum;
+    }
+
+    // laplace function for b
+    const laplaceB = function(x, y) {
+        var sum = 0;
+        sum += grid[x][y].b * -1;
+        sum += grid[x + 1][y].b * .2;
+        sum += grid[x - 1][y].b * .2;
+        sum += grid[x][y + 1].b * .2;
+        sum += grid[x][y - 1].b * .2;
+        sum += grid[x + 1][y + 1].b * .05;
+        sum += grid[x + 1][y - 1].b * .05;
+        sum += grid[x - 1][y + 1].b * .05;
+        sum += grid[x - 1][y - 1].b * .05;
+        return sum;
+    }
+
+    // clamp the value
+    const clamp = function(value, min, max) {
+        if (value > max) value = max;
+        if (value < min) value = min;
+        return value;
+    }
+</script>
+
+</html>
