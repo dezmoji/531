@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang=en>
+
+<head>
+    <meta charset=utf-8>
+    <title>OpenGL and Shaders</title>
+    <script id='vertex' type='x-shader/x-vertex'>
+        attribute vec2 aPosition; attribute vec2 aTextureCoord; varying vec2 vTexCoord; void main(){ vTexCoord = aTextureCoord; gl_Position = vec4(aPosition, 0, 1); }
+    </script>
+    <script id='fragment' type='x-shader/x-fragment'>
+        precision mediump float; varying vec2 vTexCoord; uniform sampler2D uSampler; void main(){ gl_FragColor = vec4(.5, 1.0, .4, 1.0);} //texture2D(uSampler, vec2 (vTexCoord.s,vTexCoord.t));
+    </script>
+    <script>
+        window.onload = function() {
+            let canvas = document.getElementById('gl');
+            let gl = canvas.getContext('webgl');
+            canvas.width = canvas.height = 256;
+
+            let textureCanvas = document.getElementById('texture');
+            textureCanvas.width = textureCanvas.height = 256;
+            let textureCtx = textureCanvas.getContext('2d');
+            //textureCanvas.style.display = 'none';
+
+            // define drawing area of canvas. bottom corner, width / height
+            gl.viewport(0, 0, gl.drawingBufferWidth * 2, gl.drawingBufferHeight * 2);
+
+            // create a buffer object to store vertices
+            let buffer = gl.createBuffer();
+
+            // point buffer at graphic context's ARRAY_BUFFER
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+
+            let triangles = new Float32Array([-1, -1,
+                1, -1, -1, 1, -1, 1,
+                1, -1,
+                1, 1
+            ]);
+
+            // initialize memory for buffer and populate it. Give
+            // webgl hint conents will not change dynamically
+            gl.bufferData(gl.ARRAY_BUFFER, triangles, gl.STATIC_DRAW);
+
+            // create vertex shader
+            let vertexSource = document.getElementById('vertex').text;
+            let vertexShader = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vertexShader, vertexSource);
+            gl.compileShader(vertexShader);
+
+            // create fragment shader
+            let fragmentSource = document.getElementById('fragment').text;
+            let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fragmentShader, fragmentSource);
+            gl.compileShader(fragmentShader);
+
+            // create shader program
+            let program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            let position = gl.getAttribLocation(program, 'aPosition');
+            gl.enableVertexAttribArray(position);
+            gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+
+            program.textureCoordAttribute = gl.getAttribLocation(program, 'aTextureCoord');
+            gl.enableVertexAttribArray(program.textureCoordAttribute);
+            gl.vertexAttribPointer(program.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+
+            // the sampler will automatically pass in the bound texture
+            program.samplerUniform = gl.getUniformLocation(program, 'uSampler');
+            gl.uniform1i(program.samplerUniform, 0);
+
+            let texture = gl.createTexture();
+
+            let getTexture = function() {
+                // canvas draws with the upper-left hand corner as {0,0}, while WebGL
+                // draws with the lower-left corner at {0,0}. Therefore we need to flip
+                // the y-axis when we read in our canvas pixel data
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
+
+                // use linear interpolation to generate sub-pixel data
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            }
+
+            let webglSetup = function() {
+                // sets default background color
+                gl.clearColor(1.0, 1.0, 1.0, 1.0);
+
+                // clear color buffer
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                gl.activeTexture(gl.TEXTURE0);
+            }
+
+            const render = function() {
+                window.requestAnimationFrame(render, canvas);
+
+                webglSetup();
+
+                // this is your draw method
+                canvasDraw();
+
+                getTexture();
+
+                // draw triangles using the array buffer from index 0 to 6
+                // and using the bound texture
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            }
+
+            const canvasDraw = function() {
+
+            }
+
+            render();
+        }
+    </script>
+</head>
+
+<body>
+    <canvas id='gl'></canvas>
+    <canvas id='texture'></canvas>
+</body>
+
+</html>
