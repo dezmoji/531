@@ -8,16 +8,30 @@
         attribute vec2 aPosition; attribute vec2 aTextureCoord; varying vec2 vTexCoord; void main(){ vTexCoord = aTextureCoord; gl_Position = vec4(aPosition, 0, 1); }
     </script>
     <script id='fragment' type='x-shader/x-fragment'>
-        precision mediump float; varying vec2 vTexCoord; uniform sampler2D uSampler; void main(){ gl_FragColor = vec4(.5, 1.0, .4, 1.0);} //texture2D(uSampler, vec2 (vTexCoord.s,vTexCoord.t));
+        precision mediump float; varying vec2 vTexCoord; uniform sampler2D uSampler; void main(){ gl_FragColor = texture2D(uSampler, vec2 (vTexCoord.s,vTexCoord.t)) * vec4(.1,.5,.3,1);}
     </script>
     <script>
         window.onload = function() {
+            let currentGrid = [];
+            let nextGrid = [];
+            let gridSize = 200;
+            let overPop = 3;
+            for (let i = 0; i < gridSize; i++) {
+                currentGrid[i] = [];
+                nextGrid[i] = [];
+
+                for (let j = 0; j < gridSize; j++) {
+                    currentGrid[i][j] = Math.random() > .5 ? 1 : 0;
+                    nextGrid[i][j] = 0;
+                }
+            }
+
             let canvas = document.getElementById('gl');
             let gl = canvas.getContext('webgl');
-            canvas.width = canvas.height = 256;
+            canvas.width = canvas.height = 512;
 
             let textureCanvas = document.getElementById('texture');
-            textureCanvas.width = textureCanvas.height = 256;
+            textureCanvas.width = textureCanvas.height = 512;
             let textureCtx = textureCanvas.getContext('2d');
             //textureCanvas.style.display = 'none';
 
@@ -96,7 +110,7 @@
                 gl.activeTexture(gl.TEXTURE0);
             }
 
-            const render = function() {
+            render = function() {
                 window.requestAnimationFrame(render, canvas);
 
                 webglSetup();
@@ -111,8 +125,89 @@
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             }
 
-            const canvasDraw = function() {
+            canvasDraw = function() {
+                // for each cell ...
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
 
+                        let neighborsAlive = 0;
+
+                        // find the amount of neighbors alive
+                        for (let x = -1; x < 2; x++) {
+                            for (let y = -1; y < 2; y++) {
+                                // find the current X and Y positions of the cell to be looked at
+                                let curX = x + i;
+                                let curY = y + j;
+
+                                // if the x or y would be out of bounds (meaning i or j is an edge), adjust the value accordingly
+                                if (curX == -1) curX = gridSize - 1;
+                                if (curX >= gridSize) curX -= gridSize;
+                                if (curY == -1) curY = gridSize - 1;
+                                if (curY >= gridSize) curY -= gridSize;
+
+                                // add the value to the amount of neighbors alive
+                                neighborsAlive += currentGrid[curX][curY];
+                            }
+                        }
+
+                        // subtract the current cell value 
+                        neighborsAlive -= currentGrid[i][j];
+
+                        // if the cell is alive
+                        if (currentGrid[i][j] == 1) {
+
+                            // check for underpoplutation/overpopulation to see if cell lives on
+                            if (neighborsAlive > overPop || neighborsAlive < 2) {
+                                // cell dies 
+                                nextGrid[i][j] = 0;
+                                continue;
+                            }
+
+                            // cell lives on to next gen
+                            else {
+                                nextGrid[i][j] = 1;
+                                continue;
+                            }
+                        }
+
+                        // if the cell is dead but has exactly 3 neighbors
+                        if (currentGrid[i][j] == 0 && neighborsAlive == 3) {
+                            // the cell will be reproduced
+                            nextGrid[i][j] = 1;
+                            continue;
+                        }
+                        // cell stays dead
+                        else {
+                            nextGrid[i][j] = 0;
+                        }
+                    }
+                }
+
+                // assign values in nextGrid to currentGrid
+                let swap = currentGrid;
+                currentGrid = nextGrid;
+                nextGrid = swap;
+
+                textureCtx.fillStyle = 'black'
+                textureCtx.fillRect(0, 0, canvas.width, canvas.height)
+
+                let cellWidth = canvas.width / gridSize;
+                let cellHeight = canvas.height / gridSize;
+
+                for (let i = 0; i < gridSize; i++) {
+                    let row = currentGrid[i];
+                    let yPos = i * cellHeight;
+
+                    for (let j = 0; j < gridSize; j++) {
+                        let cell = row[j];
+                        let xPos = j * cellWidth
+
+                        if (cell === 1) {
+                            textureCtx.fillStyle = 'white'
+                            textureCtx.fillRect(xPos, yPos, cellWidth, cellHeight)
+                        }
+                    }
+                }
             }
 
             render();
