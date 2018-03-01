@@ -18,17 +18,19 @@
 </head>
 
 <body> <canvas></canvas></body>
+<script type="text/javascript" src="dat.gui.min.js"></script>
 <script id='vShader' type='whatever'>
-    precision mediump float; attribute vec2 a_postion; void main(){ gl_Position = vec4(a_postion, 0, 1.0); }
+    precision mediump float; attribute vec2 a_position; void main(){ gl_Position = vec4(a_position, 0, 1.0); }
 </script>
 <script id='fShader_draw' type='whatever'>
     precision mediump float; uniform sampler2D state; uniform vec2 scale; void main(){ vec4 color = texture2D(state, gl_FragCoord.xy / scale); gl_FragColor = vec4(1. - color.x, 1. - color.x, 1. - color.x, 1.); }
 </script>
 <script id='fShader_render' type='whatever'>
-    precision mediump float; uniform sampler2D state; uniform vec2 scale; float f=.0545, k=.062, dA = 1., dB = 0.5; vec2 get(int x, int y) { return texture2D( state, ( gl_FragCoord.xy + vec2(x, y) ) / scale ).rg; } vec2 run() { vec2 state = get( 0, 0 ); float
-    a = state.r; float b = state.g; float sumA = a * -1.; float sumB = b * -1.; sumA += get(-1,0).r * .2; sumA += get(-1,-1).r * .05; sumA += get(0,-1).r * .2; sumA += get(1,-1).r * .05; sumA += get(1,0).r * .2; sumA += get(1,1).r * .05; sumA += get(0,1).r
-    * .2; sumA += get(-1,1).r * .05; sumB += get(-1,0).g * .2; sumB += get(-1,-1).g * .05; sumB += get(0,-1).g * .2; sumB += get(1,-1).g * .05; sumB += get(1,0).g * .2; sumB += get(1,1).g * .05; sumB += get(0,1).g * .2; sumB += get(-1,1).g * .05; state.r
-    = a + dA * sumA - a * b * b + f * (1. - a); state.g = b + dB * sumB + a * b * b - ((k+f) * b); return state; } void main() { vec2 nextState = run(); gl_FragColor = vec4( nextState.r, nextState.g, 0., 1. ); }
+    precision mediump float; uniform sampler2D state; uniform vec2 scale; uniform float f; uniform float k; uniform float dA; uniform float dB; vec2 get(int x, int y) { return texture2D( state, ( gl_FragCoord.xy + vec2(x, y) ) / scale ).rg; } vec2 run() {
+    vec2 state = get( 0, 0 ); float a = state.r; float b = state.g; float sumA = a * -1.; float sumB = b * -1.; sumA += get(-1,0).r * .2; sumA += get(-1,-1).r * .05; sumA += get(0,-1).r * .2; sumA += get(1,-1).r * .05; sumA += get(1,0).r * .2; sumA +=
+    get(1,1).r * .05; sumA += get(0,1).r * .2; sumA += get(-1,1).r * .05; sumB += get(-1,0).g * .2; sumB += get(-1,-1).g * .05; sumB += get(0,-1).g * .2; sumB += get(1,-1).g * .05; sumB += get(1,0).g * .2; sumB += get(1,1).g * .05; sumB += get(0,1).g
+    * .2; sumB += get(-1,1).g * .05; state.r = a + dA * sumA - a * b * b + f * (1. - a); state.g = b + dB * sumB + a * b * b - ((k+f) * b); return state; } void main() { vec2 nextState = run(); gl_FragColor = vec4( nextState.r, nextState.g, 0., 1. );
+    }
 </script>
 <script type='text/javascript'>
     window.onload = function() {
@@ -39,6 +41,24 @@
 
         let stateSize = Math.pow(2, Math.floor(Math.log(canvas.width) / Math.log(2)));
         let renderSize = canvas.width;
+
+        // create the text for the gui and it's properties 
+        let GuiText = function() {
+            this.frameRate = 12;
+            this.f = .0367;
+            this.k = .0649;
+            this.dA = 0.59;
+            this.dB = 0.25;
+        };
+
+        // create the gui
+        let text = new GuiText();
+        let gui = new dat.GUI();
+        gui.add(text, 'frameRate', 2, 30).step(1);
+        gui.add(text, 'f', 0.0200, 0.0599);
+        gui.add(text, 'k', 0.0300, 0.0699);
+        gui.add(text, 'dA', 0, 1).step(.01);
+        gui.add(text, 'dB', 0, 1).step(.01);
 
         let verts = [
             1, 1, -1, 1, -1, -1,
@@ -56,13 +76,13 @@
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
         gl.shaderSource(vertexShader, shaderSource);
         gl.compileShader(vertexShader);
-        console.log(gl.getShaderInfoLog(vertexShader));
+        //console.log(gl.getShaderInfoLog(vertexShader));
 
         shaderSource = document.getElementById('fShader_render').text;
         const fragmentShaderRender = gl.createShader(gl.FRAGMENT_SHADER);
         gl.shaderSource(fragmentShaderRender, shaderSource);
         gl.compileShader(fragmentShaderRender);
-        console.log(gl.getShaderInfoLog(fragmentShaderRender));
+        //console.log(gl.getShaderInfoLog(fragmentShaderRender));
 
         const programRender = gl.createProgram();
         gl.attachShader(programRender, vertexShader);
@@ -70,17 +90,27 @@
         gl.linkProgram(programRender);
         gl.useProgram(programRender);
 
-        //const position = gl.getAttribLocation(programRender, 'a_position');
-        //gl.enableVertexAttribArray(position);
-        //gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+        const position = gl.getAttribLocation(programRender, 'a_position');
+        gl.enableVertexAttribArray(position);
+        gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
         let scale = gl.getUniformLocation(programRender, 'scale');
         gl.uniform2f(scale, stateSize, stateSize);
+
+        let f = gl.getUniformLocation(programRender, 'f');
+        gl.uniform1f(f, text.f);
+        let k = gl.getUniformLocation(programRender, 'k');
+        gl.uniform1f(k, text.k);
+        let dA = gl.getUniformLocation(programRender, 'dA');
+        gl.uniform1f(dA, text.dA);
+        let dB = gl.getUniformLocation(programRender, 'dB');
+        gl.uniform1f(dB, text.dB);
+
 
         shaderSource = document.getElementById('fShader_draw').text;
         const fragmentShaderDraw = gl.createShader(gl.FRAGMENT_SHADER);
         gl.shaderSource(fragmentShaderDraw, shaderSource);
         gl.compileShader(fragmentShaderDraw);
-        console.log(gl.getShaderInfoLog(fragmentShaderDraw));
+        //console.log(gl.getShaderInfoLog(fragmentShaderDraw));
 
         const programDraw = gl.createProgram();
         gl.attachShader(programDraw, vertexShader);
@@ -174,7 +204,16 @@
         const draw = function() {
             gl.useProgram(programRender);
 
-            for (let i = 0; i < 12; i++) {
+            f = gl.getUniformLocation(programRender, 'f');
+            gl.uniform1f(f, text.f);
+            k = gl.getUniformLocation(programRender, 'k');
+            gl.uniform1f(k, text.k);
+            dA = gl.getUniformLocation(programRender, 'dA');
+            gl.uniform1f(dA, text.dA);
+            dB = gl.getUniformLocation(programRender, 'dB');
+            gl.uniform1f(dB, text.dB);
+
+            for (let i = 0; i < text.frameRate; i++) {
                 pingpong();
             }
             // use the default framebuffer object by passing null
