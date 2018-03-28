@@ -7,8 +7,16 @@ const dat = require('dat.gui');
 const app = {
     init() {
         this.audioCtx = new AudioContext();
-        this.scale = Tonal.Scale.notes("C4 Minor");
-        //this.scale = Key.scale("A major");
+        this.osc = this.audioCtx.createOscillator();
+        this.osc.frequency.setValueAtTime(440, this.audioCtx.currentTime);
+        this.osc.connect(this.audioCtx.destination);
+        this.osc.start();
+        this.midiValues = [];
+        this.sphereList = [];
+        this.sphereCounter = 0;
+        for (let i = 0; i < 128; i++) {
+            this.midiValues.push(i);
+        };
         this.color = "#ffffff";
         this.curX = 0.1;
         this.curY = 0;
@@ -31,12 +39,6 @@ const app = {
         // move camera back
         this.camera.position.z = 100;
 
-        for (let i = 0; i < 130; i++) {
-            let freq1 = Tonal.freq(Tonal.Note.fromMidi(i));
-            if (freq1 != null) console.log(Tonal.Note.fromMidi(i));
-        }
-
-
         this.createRenderer();
         this.createLights();
         this.createGUI();
@@ -49,7 +51,6 @@ const app = {
         let setUpGUI = function() {
             this.message = "Move w/ WASD";
             this.color = "#ffffff";
-            this.scales = 'c4 minor';
             this.a = 10.0;
             this.b = 28.0;
             this.c = 8.0 / 3.0;
@@ -73,7 +74,6 @@ const app = {
         this.text = new setUpGUI();
         this.gui = new dat.GUI();
         this.gui.add(this.text, 'message');
-        this.gui.add(this.text, 'scales', ['c4 minor', 'c4 major', 'a major', 'a minor', 'c minor', 'c major']);
         this.gui.addColor(this.text, 'color');
         this.gui.add(this.text, 'a', 5, 30);
         this.gui.add(this.text, 'b', 25, 50);
@@ -136,38 +136,47 @@ const app = {
     },
 
     createSphere(x, y, z) {
+        /*
         this.color = this.text.color;
-        this.geometry = new THREE.SphereGeometry(.25);
+        this.geometry = new THREE.PlaneBufferGeometry(1, 1);
         this.material = new THREE.MeshBasicMaterial({ color: app.color });
-        this.sphere = new THREE.Mesh(this.geometry, this.material);
+        this.plane = new THREE.Mesh(this.geometry, this.material);
         //this.sphere.position = new THREE.Vector3(x, y, z);
-        this.sphere.position.x = x;
-        this.sphere.position.y = y;
-        this.sphere.position.z = z;
-        this.scene.add(this.sphere);
+        this.plane.position.x = x;
+        this.plane.position.y = y;
+        this.plane.position.z = z;
+        this.scene.add(this.plane);
+        */
+
+        this.geometry = new THREE.SphereBufferGeometry(.25);
+        this.material = new THREE.MeshBasicMaterial({ color: app.color });
+        let sphere = new THREE.Mesh(this.geometry, this.material);
+        sphere.name = this.sphereCounter;
+        this.sphereCounter++;
+        sphere.position.x = x;
+        sphere.position.y = y;
+        sphere.position.z = z;
+
+        this.scene.add(sphere);
+        this.sphereList.push(sphere);
+
         if (this.i % 25 == 0) this.playKeyNote();
     },
 
     playKeyNote() {
-        let tempScale = this.text.scales;
-        this.scale = Tonal.Scale.notes(tempScale);
-        this.osc = this.audioCtx.createOscillator();
-        this.index = Math.floor(this.curX * this.curZ % this.scale.length);
-        this.note = this.scale[Math.abs(this.index)];
-        this.midiValue = Tonal.midi(this.note);
-        let freq = Tonal.freq(this.note);
+        // look into screen aligned/buildboards/limit number of meshes
+        // this.value = this.midiValues[(Math.floor(Math.random() * 128))];
+
+        let alpha = this.a * Math.cos(this.i);
+        let beta = this.b * Math.sin(this.i);
+        let gamma = this.c * Math.sqrt(this.i);
+
+        let omega = Math.abs(Math.floor((alpha * beta * gamma / this.h)) % this.midiValues.length);
+        let value = this.midiValues[omega];
+        console.log(value);
+
+        let freq = Tonal.freq(value);
         this.osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
-
-        console.log(' gui:' + this.text.scales);
-        console.log(' scale:' + this.scale);
-        console.log(' note:' + this.note);
-        console.log(' midi: ' + this.midi);
-        console.log(' freq:' + freq);
-
-        this.osc.connect(this.audioCtx.destination);
-        this.osc.start();
-        this.osc.stop(this.audioCtx.currentTime + .15);
-
     }
 };
 
