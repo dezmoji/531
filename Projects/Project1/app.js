@@ -1,7 +1,12 @@
 'use strict';
+const THREE = require('three');
+const Tonal = require('tonal');
+const dat = require('dat.gui');
+
 const app = {
     init() {
-        // create the properties for the lorenz function
+        this.audioCtx = new AudioContext();
+        this.color = "#ffffff";
         this.curX = 0.1;
         this.curY = 0;
         this.curZ = 0;
@@ -10,12 +15,9 @@ const app = {
         this.c = 8.0 / 3.0;
         this.h = .01;
         this.i = 0;
-        this.material = new THREE.LineBasicMaterial({ color: 0x0000ff });
 
-        // pretty simple...
         this.scene = new THREE.Scene();
 
-        // camera is a bit more involved...
         this.camera = new THREE.PerspectiveCamera(
             75, // FOV 
             window.innerWidth / window.innerHeight, // aspect ratio
@@ -33,17 +35,15 @@ const app = {
         this.render();
     },
 
-    // creates GUI
+
     createGUI() {
         let setUpGUI = function() {
             this.message = "Move w/ WASD";
+            this.color = "#ffffff";
             this.a = 10.0;
             this.b = 28.0;
             this.c = 8.0 / 3.0;
             this.h = .01;
-            this.fog = function() {
-                app.scene.fog = new THREE.Fog(0x5b6166, 1, 50);
-            };
             this.preset1 = function() {
                 this.a = 10.0;
                 this.b = 28.0;
@@ -63,13 +63,14 @@ const app = {
         this.text = new setUpGUI();
         this.gui = new dat.GUI();
         this.gui.add(this.text, 'message');
+        this.gui.addColor(this.text, 'color');
         this.gui.add(this.text, 'a', 5, 30);
         this.gui.add(this.text, 'b', 25, 50);
         this.gui.add(this.text, 'c', 1, 4).step(1 / 3);
         this.gui.add(this.text, 'h', .01, .05).step(.01);
-        this.gui.add(this.text, 'fog');
         this.gui.add(this.text, 'preset1');
         this.gui.add(this.text, 'preset2');
+
     },
 
     createRenderer() {
@@ -106,9 +107,6 @@ const app = {
         this.c = this.text.c;
         this.h = this.text.h;
 
-        // create the geometry
-        let geometry = new THREE.Geometry();
-
         // set the previous values
         this.prevX = this.curX;
         this.prevY = this.curY;
@@ -121,16 +119,38 @@ const app = {
 
         // wait until after the 100th value is calculated
         if (this.i > 100) {
-            geometry.vertices.push(new THREE.Vector3(this.prevX, this.prevY, this.prevZ));
-            geometry.vertices.push(new THREE.Vector3(this.curX, this.curY, this.curZ));
+            this.createSphere(this.curX, this.curY, this.curZ);
         }
         this.i++;
+    },
 
-        // create the new line and add it to the scene
-        this.line = new THREE.Line(geometry, this.material);
-        this.scene.add(this.line);
+    createSphere(x, y, z) {
+        this.color = this.text.color;
+        this.geometry = new THREE.SphereGeometry(.25);
+        this.material = new THREE.MeshBasicMaterial({ color: app.color });
+        this.sphere = new THREE.Mesh(this.geometry, this.material);
+        //this.sphere.position = new THREE.Vector3(x, y, z);
+        this.sphere.position.x = x;
+        this.sphere.position.y = y;
+        this.sphere.position.z = z;
+        this.scene.add(this.sphere);
+        if (this.i % 25 == 0) this.playKeyNote();
+    },
+
+    playKeyNote() {
+        // look into screen aligned/buildboards/limit number of meshes
+        this.osc = this.audioCtx.createOscillator();
+        this.midiValue = Tonal.midi();
+        let freq = Tonal.freq();
+        this.osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+
+        this.osc.connect(this.audioCtx.destination);
+        this.osc.start();
+        this.osc.stop(this.audioCtx.currentTime + .15);
+
     }
-}
+};
 
 window.onload = () => app.init();
 
