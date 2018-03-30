@@ -8,7 +8,13 @@ const app = {
     init() {
         this.audioCtx = new AudioContext();
         this.osc = this.audioCtx.createOscillator();
-        this.osc.frequency.setValueAtTime(440, this.audioCtx.currentTime);
+        this.color = 1;
+        this.delay = this.audioCtx.createDelay();
+        this.delay.delayTime.setValueAtTime(.5, this.audioCtx.currentTime);
+        this.osc.frequency.setValueAtTime(220, this.audioCtx.currentTime);
+        // this.delay.connect(this.osc);
+        this.osc.connect(this.delay);
+        this.delay.connect(this.audioCtx.destination);
         this.osc.connect(this.audioCtx.destination);
         this.osc.start();
         this.midiValues = [];
@@ -149,7 +155,7 @@ const app = {
         */
 
         this.geometry = new THREE.SphereBufferGeometry(.25);
-        this.material = new THREE.MeshBasicMaterial({ color: app.color });
+        this.material = new THREE.MeshBasicMaterial({ color: this.color });
         let sphere = new THREE.Mesh(this.geometry, this.material);
         sphere.name = this.sphereCounter;
         this.sphereCounter++;
@@ -159,6 +165,12 @@ const app = {
 
         this.scene.add(sphere);
         this.sphereList.push(sphere);
+        if (this.sphereList.length >= 1000) {
+            let removedSphere = this.sphereList.shift();
+            this.scene.remove(removedSphere);
+            removedSphere.material.dispose();
+            removedSphere.geometry.dispose();
+        }
 
         if (this.i % 25 == 0) this.playKeyNote();
     },
@@ -173,7 +185,8 @@ const app = {
 
         let omega = Math.abs(Math.floor((alpha * beta * gamma / this.h)) % this.midiValues.length);
         let value = this.midiValues[omega];
-        console.log(value);
+        let rgb = (value * 2);
+        this.color = new THREE.Color("rgb(" + rgb + ", " + Math.min(rgb * 3, 255) + ", " + Math.floor(rgb / 4) + ")");
 
         let freq = Tonal.freq(value);
         this.osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
