@@ -1,4 +1,10 @@
 (function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
+/*
+Author: Dezmon Gilbert
+Purpose: IGME 531 Project 1 
+Dependancies: three.js, tonal, dat.gui
+*/
+
 'use strict';
 const THREE = require('three');
 const Tonal = require('tonal');
@@ -6,24 +12,19 @@ const dat = require('dat.gui');
 
 const app = {
     init() {
-        this.audioCtx = new AudioContext();
-        this.osc = this.audioCtx.createOscillator();
-        this.color = 1;
-        this.delay = this.audioCtx.createDelay();
-        this.delay.delayTime.setValueAtTime(.5, this.audioCtx.currentTime);
-        this.osc.frequency.setValueAtTime(220, this.audioCtx.currentTime);
-        // this.delay.connect(this.osc);
-        this.osc.connect(this.delay);
-        this.delay.connect(this.audioCtx.destination);
-        this.osc.connect(this.audioCtx.destination);
-        this.osc.start();
-        this.midiValues = [];
+        // holds exisiting spheres
         this.sphereList = [];
-        this.sphereCounter = 0;
+
+        // holds midi values
+        this.midiValues = [];
         for (let i = 0; i < 128; i++) {
             this.midiValues.push(i);
         };
+
+        // color for the sphere material
         this.color = "#ffffff";
+
+        // initialize variables for lorenz attractor 
         this.curX = 0.1;
         this.curY = 0;
         this.curZ = 0;
@@ -45,6 +46,7 @@ const app = {
         // move camera back
         this.camera.position.z = 100;
 
+        this.setupAudio();
         this.createRenderer();
         this.createLights();
         this.createGUI();
@@ -52,42 +54,38 @@ const app = {
         this.render();
     },
 
+    setupAudio() {
+        this.audioCtx = new AudioContext();
+        this.osc = this.audioCtx.createOscillator();
+        this.delay = this.audioCtx.createDelay();
+        this.delay.delayTime.setValueAtTime(.5, this.audioCtx.currentTime);
+        this.osc.frequency.setValueAtTime(220, this.audioCtx.currentTime);
+        this.osc.connect(this.delay);
+        this.delay.connect(this.audioCtx.destination);
+        this.osc.connect(this.audioCtx.destination);
+        this.osc.start();
+    },
 
+    // creates the gui for the user to manipualte values
     createGUI() {
         let setUpGUI = function() {
             this.message = "Move w/ WASD";
-            this.color = "#ffffff";
+            this.background = "#000000";
             this.a = 10.0;
             this.b = 28.0;
             this.c = 8.0 / 3.0;
-            this.h = .01;
-            this.preset1 = function() {
-                this.a = 10.0;
-                this.b = 28.0;
-                this.c = 8.0 / 3.0;
-                this.h = .01;
-                app.gui.updateDisplay();
-            }
-            this.preset2 = function() {
-                this.a = 28.0;
-                this.b = 46.92;
-                this.c = 4;
-                this.h = .01;
-                app.gui.updateDisplay();
-            }
+            this.mean = 64;
+            this.range = 10;
         };
 
         this.text = new setUpGUI();
         this.gui = new dat.GUI();
         this.gui.add(this.text, 'message');
-        this.gui.addColor(this.text, 'color');
+        this.gui.addColor(this.text, 'background');
         this.gui.add(this.text, 'a', 5, 30);
         this.gui.add(this.text, 'b', 25, 50);
         this.gui.add(this.text, 'c', 1, 4).step(1 / 3);
-        this.gui.add(this.text, 'h', .01, .05).step(.01);
-        this.gui.add(this.text, 'preset1');
-        this.gui.add(this.text, 'preset2');
-
+        this.gui.add(this.text, 'mean', 0, 127).step(1);
     },
 
     createRenderer() {
@@ -114,15 +112,18 @@ const app = {
 
         this.lorenz();
 
+        // update the scene background
+        this.scene.background = new THREE.Color(this.text.background);
+
         this.renderer.render(this.scene, this.camera);
     },
 
+    // calculates lorenz values 
     lorenz() {
         // update values from the gui
         this.a = this.text.a;
         this.b = this.text.b;
         this.c = this.text.c;
-        this.h = this.text.h;
 
         // set the previous values
         this.prevX = this.curX;
@@ -134,37 +135,30 @@ const app = {
         this.curY = this.prevY + this.h * (this.prevX * (this.b - this.prevZ) - this.prevY);
         this.curZ = this.prevZ + this.h * (this.prevX * this.prevY - this.c * this.prevZ);
 
-        // wait until after the 100th value is calculated
+        // wait until after the 100th frame
         if (this.i > 100) {
             this.createSphere(this.curX, this.curY, this.curZ);
         }
         this.i++;
     },
 
+    // creates the spheres for the lorenz
     createSphere(x, y, z) {
-        /*
-        this.color = this.text.color;
-        this.geometry = new THREE.PlaneBufferGeometry(1, 1);
-        this.material = new THREE.MeshBasicMaterial({ color: app.color });
-        this.plane = new THREE.Mesh(this.geometry, this.material);
-        //this.sphere.position = new THREE.Vector3(x, y, z);
-        this.plane.position.x = x;
-        this.plane.position.y = y;
-        this.plane.position.z = z;
-        this.scene.add(this.plane);
-        */
-
+        // create the geometry, material, and mesh of the sphere
         this.geometry = new THREE.SphereBufferGeometry(.25);
         this.material = new THREE.MeshBasicMaterial({ color: this.color });
         let sphere = new THREE.Mesh(this.geometry, this.material);
-        sphere.name = this.sphereCounter;
-        this.sphereCounter++;
+
+        // set the position of the sphere
         sphere.position.x = x;
         sphere.position.y = y;
         sphere.position.z = z;
 
+        // add the sphere to the scene and the sphere list
         this.scene.add(sphere);
         this.sphereList.push(sphere);
+
+        // after 1000 spheres are on screen, start cleaning up old spheres
         if (this.sphereList.length >= 1000) {
             let removedSphere = this.sphereList.shift();
             this.scene.remove(removedSphere);
@@ -172,24 +166,27 @@ const app = {
             removedSphere.geometry.dispose();
         }
 
-        if (this.i % 25 == 0) this.playKeyNote();
+        // play a different note every 25 frames
+        if (this.i % 25 == 0) this.playNote();
     },
 
-    playKeyNote() {
-        // look into screen aligned/buildboards/limit number of meshes
-        // this.value = this.midiValues[(Math.floor(Math.random() * 128))];
+    // plays a note
+    playNote() {
+        // using a modified standard distribution equation, find an index value
+        // "a" serves as a range modifier while the "mean" is the midi value that 
+        // the equation is centered around.
+        let index = Math.floor(this.text.mean + ((Math.random() * this.text.a * 2) - this.text.a)) % this.midiValues.length;
 
-        let alpha = this.a * Math.cos(this.i);
-        let beta = this.b * Math.sin(this.i);
-        let gamma = this.c * Math.sqrt(this.i);
-
-        let omega = Math.abs(Math.floor((alpha * beta * gamma / this.h)) % this.midiValues.length);
-        let value = this.midiValues[omega];
-        let rgb = (value * 2);
-        this.color = new THREE.Color("rgb(" + rgb + ", " + Math.min(rgb * 3, 255) + ", " + Math.floor(rgb / 4) + ")");
-
+        // use the index to access the correct midi value, then play the frequency
+        let value = this.midiValues[index];
         let freq = Tonal.freq(value);
         this.osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+        // using the midi value, determine rgb values for the spheres
+        let r = (value * 2) % 255;
+        let g = Math.abs((value + Math.floor((Math.random() * this.text.b * 2) - this.text.b)) % 255);
+        let b = Math.abs(value + Math.floor((Math.random() * this.c * 2) - this.text.c) * 5) % 255;
+        this.color = new THREE.Color("rgb(" + r + ", " + g + ", " + b + ")");
     }
 };
 
