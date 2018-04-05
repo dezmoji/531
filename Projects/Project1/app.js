@@ -192,9 +192,15 @@ const app = {
 
         // using the midi value, determine rgb values for the spheres
         let r = (value * 2) % 255;
-        let g = Math.abs((value + Math.floor((Math.random() * this.text.b * 2) - this.text.b)) % 255);
+        let g = Math.abs((value + Math.floor((Math.random() * this.text.b * 2) - this.text.b))) % 255;
         let b = Math.abs(value + Math.floor((Math.random() * this.c * 2) - this.text.c) * 5) % 255;
-        this.color = new THREE.Color("rgb(" + r + ", " + g + ", " + b + ")");
+        this.color = new THREE.Color("rgb(" + this.clampRGB(r) + ", " + this.clampRGB(g) + ", " + this.clampRGB(b) + ")");
+    },
+
+    clampRGB(value) {
+        if (value >= 255) return 255;
+        else if (value <= 0) return 0;
+        else return value;
     }
 };
 
