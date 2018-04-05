@@ -74,8 +74,8 @@ const app = {
             this.a = 10.0;
             this.b = 28.0;
             this.c = 8.0 / 3.0;
-            this.mean = 64;
-            this.range = 10;
+            this.midiCenter = 64;
+            this.delayValue = .5;
         };
 
         this.text = new setUpGUI();
@@ -85,7 +85,8 @@ const app = {
         this.gui.add(this.text, 'a', 5, 30);
         this.gui.add(this.text, 'b', 25, 50);
         this.gui.add(this.text, 'c', 1, 4).step(1 / 3);
-        this.gui.add(this.text, 'mean', 0, 127).step(1);
+        this.gui.add(this.text, 'midiCenter', 0, 127).step(1);
+        this.gui.add(this.text, 'delayValue', 0, 1).step(.1);
     },
 
     createRenderer() {
@@ -110,21 +111,29 @@ const app = {
     render() {
         window.requestAnimationFrame(this.render);
 
-        this.lorenz();
+        this.updateFromGUI();
 
-        // update the scene background
-        this.scene.background = new THREE.Color(this.text.background);
+        this.lorenz();
 
         this.renderer.render(this.scene, this.camera);
     },
 
-    // calculates lorenz values 
-    lorenz() {
+    // updates values used from gui
+    updateFromGUI() {
         // update values from the gui
         this.a = this.text.a;
         this.b = this.text.b;
         this.c = this.text.c;
 
+        // update delay time
+        this.delay.delayTime.setValueAtTime(this.text.delayValue, this.audioCtx.currentTime);
+
+        // update the scene background
+        this.scene.background = new THREE.Color(this.text.background);
+    },
+
+    // calculates lorenz values 
+    lorenz() {
         // set the previous values
         this.prevX = this.curX;
         this.prevY = this.curY;
@@ -173,9 +182,9 @@ const app = {
     // plays a note
     playNote() {
         // using a modified standard distribution equation, find an index value
-        // "a" serves as a range modifier while the "mean" is the midi value that 
+        // "a" serves as a range modifier while the "midiCenter" is the midi value that 
         // the equation is centered around.
-        let index = Math.floor(this.text.mean + ((Math.random() * this.text.a * 2) - this.text.a)) % this.midiValues.length;
+        let index = Math.floor(this.text.midiCenter + ((Math.random() * this.text.a * 2) - this.text.a)) % this.midiValues.length;
 
         // use the index to access the correct midi value, then play the frequency
         let value = this.midiValues[index];
