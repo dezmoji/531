@@ -12,6 +12,7 @@ const app = {
     n: 0,
     c: 4,
     gui: null,
+    text: null,
 
     init() {
         this.canvas = document.querySelector('canvas');
@@ -31,13 +32,25 @@ const app = {
     },
 
     setUpGUI() {
+        let GUIObj = function() {
+            this.angle = 137.5;
+            this.reset = function() {
+                app.ctx.clearRect(0, 0, app.WIDTH, app.HEIGHT);
+                app.n = 0;
+            };
+        };
+
+        this.text = new GUIObj();
+        this.gui = new dat.GUI();
+        this.gui.add(this.text, 'angle', 137, 138).step(.1);
+        this.gui.add(this.text, 'reset');
 
     },
 
     update() {
         requestAnimationFrame(this.update.bind(this));
 
-        let angle = this.n * (137.508 * (Math.PI / 180));
+        let angle = this.n * (this.text.angle * (Math.PI / 180));
         let r = this.c * Math.sqrt(this.n);
 
         let x = r * Math.cos(angle) + this.CENTER_X;
